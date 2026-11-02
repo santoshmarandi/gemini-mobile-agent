@@ -108,13 +108,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cat << 'EOF' > release_notes.md
+          ### Gemini Mobile Agent v1.0.0
+          - Native Android AI Agent powered by Google Gemini API.
+          - Accessibility Service integration for autonomous phone control.
+          - Real-time UI hierarchy parsing, indexed element actions, and coordinate gestures.
+          - Draggable floating overlay controller with instant RED STOP emergency button.
+          - Preloaded with Gemini 3.8 / Flash models.
+          EOF
           gh release delete v1.0.0 --yes || true
           gh release create v1.0.0 release_assets/GeminiMobileAgent-v1.0.0.apk \
             --title "Gemini Mobile Agent v1.0.0" \
-            --notes "### Gemini Mobile Agent v1.0.0
-- Native Android AI Agent powered by Google Gemini API.
-- Accessibility Service integration for autonomous phone control.
-- Real-time UI hierarchy parsing, indexed element actions, and coordinate gestures.
-- Draggable floating overlay controller with instant RED STOP emergency button.
-- Preloaded with Gemini 3.8 / Flash models." \
+            --notes-file release_notes.md \
             --target "${{ github.sha }}"
