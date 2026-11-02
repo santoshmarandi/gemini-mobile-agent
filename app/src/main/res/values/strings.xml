@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Gemini Mobile Agent</string>
+    <string name="accessibility_service_name">Gemini Agent Automation Service</string>
+    <string name="accessibility_service_description">Enables the Gemini AI Agent to observe screen elements and perform automated actions (click, scroll, type) on your behalf.</string>
+</resources>
