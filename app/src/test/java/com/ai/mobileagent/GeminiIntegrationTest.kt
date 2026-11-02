@@ -11,7 +11,7 @@ import org.junit.Test
 class GeminiIntegrationTest {
 
     private val testApiKey = System.getenv("GEMINI_API_KEY").orEmpty()
-    private val model = "gemini-flash-latest"
+    private val model = "gemini-3.5-flash-lite"
     private val client = GeminiClient()
 
     @Test

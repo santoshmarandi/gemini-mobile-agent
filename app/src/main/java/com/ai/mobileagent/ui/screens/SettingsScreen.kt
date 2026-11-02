@@ -111,34 +111,51 @@ fun SettingsScreen() {
                     }
                 )
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            isValidating = true
-                            validationResult = null
-                            val res = geminiClient.validateApiKey(apiKey.trim(), selectedModel)
-                            isValidating = false
-                            if (res.isSuccess) {
-                                prefs.geminiApiKey = apiKey.trim()
-                                validationResult = Pair(true, "API Key is valid and saved securely!")
-                            } else {
-                                validationResult = Pair(false, res.exceptionOrNull()?.message ?: "Validation failed")
-                            }
-                        }
-                    },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = apiKey.isNotBlank() && !isValidating
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (isValidating) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Validating Key...")
-                    } else {
-                        Text("Save & Validate API Key")
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isValidating = true
+                                validationResult = null
+                                val trimmed = apiKey.trim()
+                                val res = geminiClient.validateApiKey(trimmed, selectedModel)
+                                isValidating = false
+                                if (res.isSuccess) {
+                                    prefs.geminiApiKey = trimmed
+                                    validationResult = Pair(true, "API Key is valid and saved securely!")
+                                } else {
+                                    validationResult = Pair(false, res.exceptionOrNull()?.message ?: "Validation failed")
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = apiKey.isNotBlank() && !isValidating
+                    ) {
+                        if (isValidating) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Checking...")
+                        } else {
+                            Text("Save & Validate")
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            val trimmed = apiKey.trim()
+                            prefs.geminiApiKey = trimmed
+                            validationResult = Pair(true, "Saved directly! Ready to use.")
+                        },
+                        enabled = apiKey.isNotBlank() && !isValidating
+                    ) {
+                        Text("Save Directly")
                     }
                 }
 
@@ -184,8 +201,9 @@ fun SettingsScreen() {
                 )
 
                 val models = listOf(
-                    AppPreferences.MODEL_GEMINI_FLASH_LATEST to "Gemini Flash Latest (Fast & Reliable)",
-                    AppPreferences.MODEL_GEMINI_3_8_FLASH to "Gemini 3.8 Flash (Latest Preview)",
+                    AppPreferences.MODEL_GEMINI_3_5_FLASH_LITE to "Gemini 3.5 Flash Lite (Fastest ~0.5s - Recommended)",
+                    AppPreferences.MODEL_GEMINI_3_5_FLASH to "Gemini 3.5 Flash (Balanced & Smart)",
+                    AppPreferences.MODEL_GEMINI_FLASH_LATEST to "Gemini Flash Latest",
                     AppPreferences.MODEL_GEMINI_PRO_LATEST to "Gemini Pro Latest"
                 )
 

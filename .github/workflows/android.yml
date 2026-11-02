@@ -102,22 +102,23 @@ jobs:
       - name: Rename APK for Release
         run: |
           mkdir -p release_assets
-          cp app/build/outputs/apk/debug/app-debug.apk release_assets/GeminiMobileAgent-v1.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk release_assets/GeminiMobileAgent-v1.0.1.apk
 
       - name: Create or Update GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cat << 'EOF' > release_notes.md
-          ### Gemini Mobile Agent v1.0.0
-          - Native Android AI Agent powered by Google Gemini API.
+          ### Gemini Mobile Agent v1.0.1
+          - Ultra-fast API Key validation via Google Models API (instant response).
+          - Added "Save Directly" button in settings so users are never blocked by network checks.
+          - Default model set to `gemini-3.5-flash-lite` (sub-second latency ~0.5s).
+          - Added OkHttp fast fallback (Happy Eyeballs RFC 8482) for mobile carrier connectivity.
           - Accessibility Service integration for autonomous phone control.
-          - Real-time UI hierarchy parsing, indexed element actions, and coordinate gestures.
           - Draggable floating overlay controller with instant RED STOP emergency button.
-          - Preloaded with Gemini 3.8 / Flash models.
           EOF
-          gh release delete v1.0.0 --yes || true
-          gh release create v1.0.0 release_assets/GeminiMobileAgent-v1.0.0.apk \
-            --title "Gemini Mobile Agent v1.0.0" \
+          gh release delete v1.0.1 --yes || true
+          gh release create v1.0.1 release_assets/GeminiMobileAgent-v1.0.1.apk \
+            --title "Gemini Mobile Agent v1.0.1" \
             --notes-file release_notes.md \
             --target "${{ github.sha }}"

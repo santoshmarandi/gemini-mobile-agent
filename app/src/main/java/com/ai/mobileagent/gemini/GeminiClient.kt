@@ -6,6 +6,8 @@ import com.ai.mobileagent.data.ScreenSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,6 +20,7 @@ class GeminiClient(
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 ) {
     private val json = Json {
@@ -29,46 +32,41 @@ class GeminiClient(
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-    suspend fun validateApiKey(apiKey: String, model: String = "gemini-flash-latest"): Result<Boolean> =
+    suspend fun validateApiKey(apiKey: String, model: String = "gemini-3.5-flash-lite"): Result<Boolean> =
         withContext(Dispatchers.IO) {
-            val candidateModels = listOf(model, "gemini-flash-latest", "gemini-3.8-flash").distinct()
-            var lastError: Exception? = null
-
-            for (m in candidateModels) {
-                try {
-                    val url = "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$apiKey"
-                    val body = GeminiGenerateRequest(
-                        contents = listOf(
-                            Content(parts = listOf(Part(text = "Hello, respond with OK")))
-                        )
-                    )
-                    val requestBody = json.encodeToString(GeminiGenerateRequest.serializer(), body)
-                        .toRequestBody(jsonMediaType)
-
-                    val request = Request.Builder()
-                        .url(url)
-                        .post(requestBody)
-                        .build()
-
-                    val response = httpClient.newCall(request).execute()
-                    val responseCode = response.code
-                    val errorBody = response.body?.string().orEmpty()
-                    response.close()
-
-                    if (responseCode == 200) {
-                        return@withContext Result.success(true)
-                    } else {
-                        lastError = Exception("API Key Validation Failed (HTTP $responseCode): $errorBody")
-                        if (responseCode == 503) {
-                            // Retry next model on temporary high demand
-                            continue
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastError = e
-                }
+            val key = apiKey.trim()
+            if (key.isBlank()) {
+                return@withContext Result.failure(Exception("API Key cannot be blank"))
             }
-            Result.failure(lastError ?: Exception("Validation failed"))
+
+            try {
+                // High-speed endpoint: GET /v1beta/models verifies key validity in ~100ms without LLM generation overhead
+                val url = "https://generativelanguage.googleapis.com/v1beta/models?key=$key"
+                val request = Request.Builder()
+                    .url(url)
+                    .get()
+                    .build()
+
+                val response = httpClient.newCall(request).execute()
+                val responseCode = response.code
+                val responseBody = response.body?.string().orEmpty()
+                response.close()
+
+                if (responseCode == 200) {
+                    Result.success(true)
+                } else {
+                    val errorMsg = try {
+                        val parsed = json.parseToJsonElement(responseBody)
+                        parsed.jsonObject["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content
+                            ?: "HTTP $responseCode"
+                    } catch (e: Exception) {
+                        "HTTP $responseCode: $responseBody"
+                    }
+                    Result.failure(Exception("Validation Error: $errorMsg"))
+                }
+            } catch (e: Exception) {
+                Result.failure(Exception("Network error: ${e.message ?: "Connection timed out"}"))
+            }
         }
 
     suspend fun getNextAction(
@@ -78,7 +76,12 @@ class GeminiClient(
         history: List<String>,
         snapshot: ScreenSnapshot
     ): Result<AgentDecision> = withContext(Dispatchers.IO) {
-        val candidateModels = listOf(model, "gemini-flash-latest", "gemini-3.8-flash").distinct()
+        val candidateModels = listOf(
+            model,
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-flash-latest"
+        ).distinct()
         var lastError: Exception? = null
 
         val promptText = AgentPrompts.buildUserTurnPrompt(goal, history, snapshot.toGeminiContext())

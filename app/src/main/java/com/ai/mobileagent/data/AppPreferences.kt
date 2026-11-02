@@ -50,9 +50,10 @@ class AppPreferences(context: Context) {
         private const val KEY_STEP_DELAY = "key_step_delay"
         private const val KEY_USE_VISION = "key_use_vision"
 
+        const val MODEL_GEMINI_3_5_FLASH_LITE = "gemini-3.5-flash-lite"
+        const val MODEL_GEMINI_3_5_FLASH = "gemini-3.5-flash"
         const val MODEL_GEMINI_FLASH_LATEST = "gemini-flash-latest"
-        const val MODEL_GEMINI_3_8_FLASH = "gemini-3.8-flash"
         const val MODEL_GEMINI_PRO_LATEST = "gemini-pro-latest"
-        const val DEFAULT_MODEL = MODEL_GEMINI_FLASH_LATEST
+        const val DEFAULT_MODEL = MODEL_GEMINI_3_5_FLASH_LITE
     }
 }
